@@ -14,7 +14,7 @@ macOSu-pad onto Applications.
 
 > [!TIP]
 > If macOS says it can't check the app, open it once, then click **Open Anyway**
-> in *System Settings → Privacy & Security*.
+> in *System Settings -> Privacy & Security*.
 
 ## How it works
 
@@ -30,8 +30,8 @@ Everything runs directly on the multitouch thread at the hardware frame rate, wi
 
 > [!TIP]
 > Send mouse events and Hide cursor need **Accessibility** permission. macOS asks
-> for it when you start tracking: allow macOSu-pad in *System Settings → Privacy
-> & Security → Accessibility*.
+> for it when you start tracking: allow macOSu-pad in *System Settings -> Privacy
+> & Security -> Accessibility*.
 
 ## Build
 
@@ -54,26 +54,6 @@ scripts/build             # app + disk image: build/release/macOSu-pad-<version>
 scripts/build --install   # ...and copy the app to /Applications
 
 cmake --preset debug && cmake --build --preset debug && ctest --preset debug   # development build + tests
-```
-
-GitHub Actions (`.github/workflows/build.yml`) runs the same debug build and
-tests on every push to `main` and every pull request, then builds the `.dmg`
-and attaches it to the run as the `macOSu-pad` artifact.
-
-### Signing
-
-By default `scripts/build` signs with a local certificate (kept in
-`~/Library/Keychains/macOSu-pad-signing.keychain-db`), so this Mac remembers
-the Accessibility permission across rebuilds. On other Macs, macOS blocks such
-an app the first time: open it once, then click **Open Anyway** in *System
-Settings → Privacy & Security*.
-
-To make a disk image that opens anywhere without that step, sign it with an
-Apple Developer ID and have it notarized:
-
-```sh
-xcrun notarytool store-credentials macosu-pad   # once: Apple ID + app-specific password
-DEVELOPER_ID="Developer ID Application: Your Name (TEAMID)" NOTARY_PROFILE=macosu-pad scripts/build
 ```
 
 ## License
