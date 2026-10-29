@@ -1,0 +1,12 @@
+# Build output (CMake presets write to build/<preset>, including vcpkg packages)
+/build/
+/vcpkg_installed/
+
+# Editors and tools
+.cache/
+.vscode/
+.idea/
+*.swp
+
+# macOS
+.DS_Store

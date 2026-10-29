@@ -1,0 +1,12 @@
+BasedOnStyle: Chromium
+
+ColumnLimit: 125
+PointerAlignment: Right
+InsertNewlineAtEOF: False
+ContinuationIndentWidth: 2
+AccessModifierOffset: -4
+IndentWidth: 4
+
+AlignAfterOpenBracket: AlwaysBreak
+AllowShortLambdasOnASingleLine: Empty
+AllowShortFunctionsOnASingleLine: Empty

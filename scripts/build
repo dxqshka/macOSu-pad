@@ -1,0 +1,116 @@
+#!/bin/sh
+# Builds the universal release app and a drag-to-install disk image:
+#   build/release/src/app/macOSu-pad.app
+#   build/release/macOSu-pad-<version>.dmg
+#
+# Usage: scripts/build [--install]
+#   --install   also copy the app to /Applications
+#
+# Signing:
+#   By default the app is signed with a self-signed local certificate (created on
+#   first run), so the Accessibility permission survives rebuilds on this Mac.
+#   Other Macs then have to allow it in System Settings → Privacy & Security →
+#   "Open Anyway".
+#   With DEVELOPER_ID="Developer ID Application: Name (TEAMID)" it is signed for
+#   distribution instead, and with NOTARY_PROFILE=<profile saved by
+#   `xcrun notarytool store-credentials`> also notarized, so it opens on any Mac.
+set -eu
+
+cd "$(dirname "$0")/.."
+
+install=false
+for arg in "$@"; do
+    case "$arg" in
+    --install) install=true ;;
+    -h | --help)
+        sed -n '2,16s/^# \{0,1\}//p' "$0"
+        exit 0
+        ;;
+    *)
+        echo "unknown option: $arg (see scripts/build --help)" >&2
+        exit 2
+        ;;
+    esac
+done
+
+: "${VCPKG_ROOT:?set VCPKG_ROOT to your vcpkg checkout (see README.md)}"
+version=$(sed -n 's/^project([^ ]* VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)
+[ -n "$version" ] || { echo "no version in CMakeLists.txt" >&2; exit 1; }
+
+cmake --preset release
+cmake --build --preset release
+
+app="build/release/src/app/macOSu-pad.app"
+dmg="build/release/macOSu-pad-$version.dmg"
+
+if [ -n "${DEVELOPER_ID:-}" ]; then
+    # Hardened runtime + secure timestamp: required for notarization.
+    sign() { codesign --force --options runtime --timestamp --sign "$DEVELOPER_ID" "$@"; }
+else
+    # Persistent identity: TCC ties Accessibility to the designated requirement, which ad-hoc makes the binary hash.
+    sign_keychain="$HOME/Library/Keychains/macOSu-pad-signing.keychain-db"
+    sign_name="macOSu-pad Local Signing"
+    # Protects only this local signing key, so it can live in the script.
+    sign_keychain_password="macOSu-pad"
+
+    if [ ! -f "$sign_keychain" ]; then
+        echo "creating local signing identity in $sign_keychain"
+        tmp=$(mktemp -d)
+        trap 'rm -rf "$tmp"' EXIT
+        cat > "$tmp/cert.cnf" <<EOF
+[req]
+distinguished_name = dn
+x509_extensions = ext
+prompt = no
+[dn]
+CN = $sign_name
+[ext]
+basicConstraints = critical,CA:false
+keyUsage = critical,digitalSignature
+extendedKeyUsage = critical,codeSigning
+EOF
+        openssl req -x509 -newkey rsa:2048 -nodes -days 36500 -config "$tmp/cert.cnf" \
+            -keyout "$tmp/key.pem" -out "$tmp/cert.pem" 2>/dev/null
+        openssl pkcs12 -export -inkey "$tmp/key.pem" -in "$tmp/cert.pem" -name "$sign_name" \
+            -out "$tmp/identity.p12" -passout pass:p12
+        security create-keychain -p "$sign_keychain_password" "$sign_keychain"
+        security set-keychain-settings "$sign_keychain" # never auto-lock
+        security unlock-keychain -p "$sign_keychain_password" "$sign_keychain"
+        security import "$tmp/identity.p12" -k "$sign_keychain" -P p12 -T /usr/bin/codesign >/dev/null
+        security set-key-partition-list -S apple-tool:,apple:,codesign: -s \
+            -k "$sign_keychain_password" "$sign_keychain" >/dev/null
+    fi
+    security unlock-keychain -p "$sign_keychain_password" "$sign_keychain"
+    # Self-signed, so not "valid" for codesign's name lookup; sign by SHA-1 hash.
+    sign_hash=$(security find-identity -p codesigning "$sign_keychain" |
+        awk -v name="\"$sign_name\"" 'index($0, name) { print $2; exit }')
+    [ -n "$sign_hash" ] || { echo "signing identity missing in $sign_keychain" >&2; exit 1; }
+    sign() { codesign --force --keychain "$sign_keychain" --sign "$sign_hash" "$@"; }
+fi
+
+sign "$app"
+codesign --verify --strict "$app"
+echo "built $app"
+
+stage=$(mktemp -d)
+cp -R "$app" "$stage/"
+ln -s /Applications "$stage/Applications"
+rm -f "$dmg"
+hdiutil create -quiet -volname "macOSu-pad $version" -srcfolder "$stage" -fs HFS+ -format UDZO -ov "$dmg"
+rm -rf "$stage"
+sign --identifier dev.macosu-pad.dmg "$dmg"
+hdiutil verify -quiet "$dmg"
+
+if [ -n "${DEVELOPER_ID:-}" ] && [ -n "${NOTARY_PROFILE:-}" ]; then
+    echo "notarizing $dmg (takes a few minutes)"
+    xcrun notarytool submit "$dmg" --keychain-profile "$NOTARY_PROFILE" --wait
+    xcrun stapler staple "$dmg"
+    spctl --assess --type open --context context:primary-signature "$dmg"
+fi
+echo "built $dmg"
+
+if $install; then
+    rm -rf "/Applications/macOSu-pad.app"
+    cp -R "$app" /Applications/
+    echo "installed /Applications/macOSu-pad.app"
+fi

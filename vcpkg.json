@@ -1,0 +1,24 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "macosu-pad",
+  "version-string": "0.2.0",
+  "builtin-baseline": "817892b0ecbc6af994dd6df999c73faf795adbf2",
+  "supports": "osx",
+  "dependencies": [
+    "glm",
+    "yoga",
+    {
+      "name": "raylib",
+      "default-features": false
+    },
+    "toml11"
+  ],
+  "features": {
+    "tests": {
+      "description": "Unit tests",
+      "dependencies": [
+        "gtest"
+      ]
+    }
+  }
+}
