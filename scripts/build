@@ -81,6 +81,9 @@ EOF
             -k "$sign_keychain_password" "$sign_keychain" >/dev/null
     fi
     security unlock-keychain -p "$sign_keychain_password" "$sign_keychain"
+    if ! security list-keychains -d user | grep -qF "$sign_keychain"; then
+        security list-keychains -d user | xargs security list-keychains -d user -s "$sign_keychain"
+    fi
     # Self-signed, so not "valid" for codesign's name lookup; sign by SHA-1 hash.
     sign_hash=$(security find-identity -p codesigning "$sign_keychain" |
         awk -v name="\"$sign_name\"" 'index($0, name) { print $2; exit }')
