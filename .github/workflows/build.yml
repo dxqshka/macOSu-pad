@@ -1,0 +1,51 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    env:
+      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/vcpkg-binary-cache
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install build tools
+        run: brew install llvm@23 cmake ninja pkgconf
+
+      # Full clone: vcpkg.json pins a builtin-baseline commit.
+      - name: Install vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg "$VCPKG_ROOT"
+          "$VCPKG_ROOT/bootstrap-vcpkg.sh" -disableMetrics
+          mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
+
+      - name: Restore vcpkg packages
+        uses: actions/cache@v6
+        with:
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'triplets/**', 'cmake/toolchains/**') }}
+          restore-keys: vcpkg-${{ runner.os }}-
+
+      - name: Build and test (debug)
+        run: |
+          cmake --preset debug
+          cmake --build --preset debug
+          ctest --preset debug
+
+      - name: Build disk image (release)
+        run: scripts/build
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: macOSu-pad
+          path: build/release/macOSu-pad-*.dmg
+          if-no-files-found: error
