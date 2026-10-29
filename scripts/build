@@ -69,9 +69,9 @@ basicConstraints = critical,CA:false
 keyUsage = critical,digitalSignature
 extendedKeyUsage = critical,codeSigning
 EOF
-        openssl req -x509 -newkey rsa:2048 -nodes -days 36500 -config "$tmp/cert.cnf" \
+        /usr/bin/openssl req -x509 -newkey rsa:2048 -nodes -days 36500 -config "$tmp/cert.cnf" \
             -keyout "$tmp/key.pem" -out "$tmp/cert.pem" 2>/dev/null
-        openssl pkcs12 -export -inkey "$tmp/key.pem" -in "$tmp/cert.pem" -name "$sign_name" \
+        /usr/bin/openssl pkcs12 -export -inkey "$tmp/key.pem" -in "$tmp/cert.pem" -name "$sign_name" \
             -out "$tmp/identity.p12" -passout pass:p12
         security create-keychain -p "$sign_keychain_password" "$sign_keychain"
         security set-keychain-settings "$sign_keychain" # never auto-lock
