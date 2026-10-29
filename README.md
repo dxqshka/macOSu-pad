@@ -16,11 +16,11 @@ macOSu-pad onto Applications.
 
 A normal trackpad uses relative positioning. macOSu-pad turns it into an absolute positioning device, mapping your finger's position directly to the screen, much like a drawing tablet.
 
-It uses Apple's private MultitouchSupport framework to read raw touch data at ~125Hz, including finger position, size, angle, and contact state.
+It uses Apple's private `MultitouchSupport` framework to read raw touch data at ~125Hz, including finger position, size, angle, and contact state.
 
 A ~20ms delay filters accidental touches, while multi-finger gestures are ignored until the fingers lift, preventing scrolling and swiping from moving the cursor. Fingertip correction compensates for the difference between the touch center and where you're actually aiming, with the touch size averaged over about a second to prevent pressure-related cursor shifts.
 
-Touch coordinates are rotated, clamped, and scaled from a configurable trackpad region to a screen region. The cursor is then moved using either CGWarpMouseCursorPosition or real mouse-moved events for games like osu!. An event tap suppresses native relative movement and keeps clicks aligned with the absolute position.
+Touch coordinates are rotated, clamped, and scaled from a configurable trackpad region to a screen region. The cursor is then moved using either `CGWarpMouseCursorPosition` or real mouse-moved events for games like osu!. An event tap suppresses native relative movement and keeps clicks aligned with the absolute position.
 
 Everything runs directly on the multitouch thread at the hardware frame rate, with zero per-frame allocations. Processing takes around 1µs per frame, plus a few dozen microseconds to post an event. The settings window and finger overlay only receive updates when open.
 
