@@ -56,6 +56,10 @@ scripts/build --install   # ...and copy the app to /Applications
 cmake --preset debug && cmake --build --preset debug && ctest --preset debug   # development build + tests
 ```
 
+GitHub Actions (`.github/workflows/build.yml`) runs the same debug build and
+tests on every push to `main` and every pull request, then builds the `.dmg`
+and attaches it to the run as the `macOSu-pad` artifact.
+
 ### Signing
 
 By default `scripts/build` signs with a local certificate (kept in
