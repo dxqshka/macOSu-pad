@@ -12,10 +12,6 @@ Use your Mac trackpad like a tablet.
 Download `macOSu-pad-<version>.dmg` from the Releases page, open it and drag
 macOSu-pad onto Applications.
 
-> [!TIP]
-> If macOS says it can't check the app, open it once, then click **Open Anyway**
-> in *System Settings -> Privacy & Security*.
-
 ## How it works
 
 A normal trackpad uses relative positioning. macOSu-pad turns it into an absolute positioning device, mapping your finger's position directly to the screen, much like a drawing tablet.
@@ -27,11 +23,6 @@ A ~20ms delay filters accidental touches, while multi-finger gestures are ignore
 Touch coordinates are rotated, clamped, and scaled from a configurable trackpad region to a screen region. The cursor is then moved using either CGWarpMouseCursorPosition or real mouse-moved events for games like osu!. An event tap suppresses native relative movement and keeps clicks aligned with the absolute position.
 
 Everything runs directly on the multitouch thread at the hardware frame rate, with zero per-frame allocations. Processing takes around 1µs per frame, plus a few dozen microseconds to post an event. The settings window and finger overlay only receive updates when open.
-
-> [!TIP]
-> Send mouse events and Hide cursor need **Accessibility** permission. macOS asks
-> for it when you start tracking: allow macOSu-pad in *System Settings -> Privacy
-> & Security -> Accessibility*.
 
 ## Build
 
